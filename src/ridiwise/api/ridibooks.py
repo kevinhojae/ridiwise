@@ -112,6 +112,33 @@ class RidiClient(BrowserBaseClient):
             page.click('button[type="submit"]')
 
             try:
+                page.wait_for_load_state()
+            except PlaywrightTimeoutError:
+                # Continue anyway.
+                self.logger.warning(
+                    'Timed out waiting for page to load after login submit.'
+                )
+
+            # Check if redirected to password change page
+            if '/account/change-password' in page.url:
+                try:
+                    skip_button_selector = 'button:has-text("다음에 변경")'
+                    page.wait_for_selector(skip_button_selector, state='visible')
+                    page.locator(skip_button_selector).click()
+                except PlaywrightTimeoutError:
+                    self.logger.warning(
+                        (
+                            'Timed out waiting for "다음에 변경" button '
+                            'on password change page.'
+                        )
+                    )
+                except Exception as e:
+                    self.logger.error(
+                        f'An error occurred while clicking "다음에 변경" button: {e}'
+                    )
+                    raise e
+
+            try:
                 page.wait_for_url('**/myridi')
                 self.cache_dir.mkdir(parents=True, exist_ok=True)
                 self.browser_context.storage_state(
