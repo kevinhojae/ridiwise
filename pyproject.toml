@@ -13,7 +13,7 @@ dependencies = [
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">= 3.10"
-version = "1.5.0"
+version = "1.6.0"
 
 [project.scripts]
 "ridiwise" = "ridiwise.cmd.main:app"
@@ -60,7 +60,7 @@ quote-style = "single"
 
 
 [tool.bumpversion]
-current_version = "1.5.0"
+current_version = "1.6.0"
 tag = true
 sign_tags = true
 commit = true
