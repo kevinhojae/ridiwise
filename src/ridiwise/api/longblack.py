@@ -112,10 +112,11 @@ class LongblackClient(BrowserBaseClient):
             page.locator(SELECTOR_LOGIN_USER_ID).fill(self.user_id)
             page.locator(SELECTOR_LOGIN_PASSWORD).fill(self.password)
 
+            page.wait_for_selector(SELECTOR_LOGIN_BUTTON)
             page.click(SELECTOR_LOGIN_BUTTON)
 
             try:
-                page.wait_for_url('**/membership')
+                page.wait_for_url(f'{self.base_url}/membership')
                 self.cache_dir.mkdir(parents=True, exist_ok=True)
                 self.browser_context.storage_state(
                     path=self.cache_dir / self.storage_state_filename
