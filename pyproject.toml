@@ -66,6 +66,7 @@ sign_tags = true
 commit = true
 message = "chore: bump version to {new_version}"
 allow_dirty = true
+pre_commit_hooks = ["uv lock", "git add uv.lock"]
 
 [[tool.bumpversion.files]]
 filename = 'pyproject.toml'
