@@ -13,7 +13,7 @@ from playwright.sync_api import (
 
 from ridiwise.api.browser_base_client import BrowserBaseClient
 
-DOMAIN = 'www.longblack.co'
+DOMAIN = 'longblack.co'
 COOKIE_DOMAIN = f'https://{DOMAIN}'
 
 SELECTOR_LOGIN_USER_ID = 'form.login-form input[name="email"]'
