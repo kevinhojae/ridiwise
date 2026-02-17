@@ -90,6 +90,12 @@ class ReadwiseClient(BaseClient):
 
         self.logger.debug(json.dumps(payload, indent=2, ensure_ascii=False))
 
+        # DEBUG: Print payload to see what's being sent
+        import pprint
+        print('=== DEBUG: Payload being sent to Readwise ===')
+        pprint.pprint(payload)
+        print('=== END DEBUG ===')
+
         response = self.client.post('/highlights/', auth=self.auth, json=payload)
         response.raise_for_status()
         return response.json()

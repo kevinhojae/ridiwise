@@ -173,14 +173,55 @@ class RidiClient(BrowserBaseClient):
 
         with self.browser_context.new_page() as page:
             page.goto(f'{self.base_url}/reading-note/shelf')
-            items = page.query_selector_all('article li')
+            # Wait for the book list to load
+            page.wait_for_selector('article ul li')
+            items = page.query_selector_all('article ul li')
 
-            books = [self._get_book_info_from_dom(item) for item in items]
+            books = []
+            for item in items:
+                # Skip items that don't have h3 (e.g., search form)
+                if item.query_selector('h3') is None:
+                    continue
+                books.append(self._get_book_info_from_dom(item))
 
             for book in books:
                 book['notes'] = self.get_notes_by_book(book['book_id'])
 
             return books
+
+    def get_book_by_id(self, book_id: str) -> Book:
+        """Get book info and notes from the detail page by book ID."""
+        if not self.is_authenticated():
+            self.logger.info('Login required')
+            self.login()
+
+        with self.browser_context.new_page() as page:
+            page.goto(f'{self.base_url}/reading-note/detail/{book_id}')
+
+            # Get book title from h3 element
+            title_elem = page.query_selector('article h3')
+            if title_elem is None:
+                raise ValueError(f'Failed to get book title for book_id: {book_id}')
+            book_title = title_elem.inner_text()
+
+            # Get authors from the page
+            authors = [
+                link.inner_text()
+                for link in page.query_selector_all('article a')
+                if (href := link.get_attribute('href')) and href.startswith('/author/')
+            ]
+
+        notes = self.get_notes_by_book(book_id)
+
+        return {
+            'book_title': book_title,
+            'book_url': f'{self.base_url}/books/{book_id}',
+            'book_notes_url': f'{self.base_url}/reading-note/detail/{book_id}',
+            'book_id': book_id,
+            'notes': notes,
+            'authors': authors,
+            'book_cover_image_url': BOOK_COVER_IMAGE_URL_FORMAT.format(book_id=book_id),
+        }
 
     def _get_book_info_from_dom(self, elem: ElementHandle) -> Book:
         book_title = elem.query_selector('h3').inner_text()
@@ -234,7 +275,10 @@ class RidiClient(BrowserBaseClient):
 
             note_items = page.query_selector_all('article li[id^="annotation_"]')
 
-            notes = [self._get_note_from_dom(item) for item in note_items]
+            notes = [
+                note for item in note_items
+                if (note := self._get_note_from_dom(item)) is not None
+            ]
             return notes
 
     def _get_note_from_dom(self, elem: ElementHandle) -> Optional[Note]:

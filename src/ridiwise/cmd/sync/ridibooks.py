@@ -89,6 +89,13 @@ def readwise(
             help='Tags to attach to the highlights. Multiple tags can be provided.',
         ),
     ] = None,
+    book_ids: Annotated[
+        Optional[list[str]],
+        typer.Option(
+            '--book-id',
+            help='Specific book ID(s) to sync. Can be provided multiple times.',
+        ),
+    ] = None,
 ):
     """
     Sync Ridibooks book notes to Readwise.io.
@@ -107,7 +114,10 @@ def readwise(
         ) as ridi_client,
         ReadwiseClient(token=readwise_token) as readwise_client,
     ):
-        books = ridi_client.get_books_from_shelf()
+        if book_ids:
+            books = [ridi_client.get_book_by_id(book_id) for book_id in book_ids]
+        else:
+            books = ridi_client.get_books_from_shelf()
 
         if not books:
             print('No book notes found.')
@@ -123,6 +133,14 @@ def readwise(
         }
 
         for book in books:
+            # Skip books with no notes
+            if not book['notes']:
+                logger.info(f'Skipping book with no notes: `{book["book_title"]}`')
+                continue
+
+            # Handle empty authors - use None instead of empty string
+            author = ', '.join(book['authors']) if book['authors'] else None
+
             highlights_response = readwise_client.create_highlights(
                 highlights=[
                     {
@@ -130,7 +148,7 @@ def readwise(
                         'title': book['book_title'],
                         'source_type': PROVIDER,
                         'category': 'books',
-                        'author': ', '.join(book['authors']),
+                        'author': author,
                         'highlighted_at': note['created_date'].isoformat(),
                         'note': note['memo'],
                         'source_url': book['book_url'],
@@ -157,7 +175,7 @@ def readwise(
 
             logger.info(
                 'Created Readwise highlights: '
-                f"`{book['book_title']}` / {len(book['notes'])}"
+                f'`{book["book_title"]}` / {len(book["notes"])}'
             )
 
         print('Synced notes to Readwise.io:')
